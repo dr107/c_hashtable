@@ -1,5 +1,12 @@
-all:
-	gcc -Wall -Werror -O3 -std=c99 hashtable.c test.c -o test.o
+CC=gcc
+OPTS=-Wall -Werror -O3 -std=c99
 
-clean:
-	rm *.o
+SRC=hashtable.c
+SRC_O=hashtable.o
+SO=hashtable.so
+
+TEST=test.c
+TEST_O=test.o
+
+all:
+	$(CC) $(OPTS) $(SRC) $(TEST) -o $(TEST_O)

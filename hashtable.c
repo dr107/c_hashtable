@@ -2,7 +2,6 @@
 #include <stdlib.h>
 
 #include "hashtable.h"
-#include "prime.h"
 
 #define HIGH .7 //maximum acceptable load factor
 #define TARGET .5 //target load factor when rehashing
@@ -21,6 +20,7 @@ struct hashtable {
 
 static int physeql(void* x, void* y);
 static unsigned long djb2(void* x);
+static int is_prime_mr(size_t);
 
 hashtable ht_create(unsigned init_size,
 		    int (*equals)(void*,void*),
@@ -255,3 +255,85 @@ int ht_containskey(hashtable h, void *key)
 	return (ht_find(h, key) < 0) ? 0 : 1;
 
 }
+
+/* ---------------------- PRIME NUMBER FUNCTIONS----------------- */
+/* These are taken from Rosetta code. I take no responsibility for their style*/
+typedef int bool;
+#define true 1
+#define false 0
+
+//bool is_prime_mr(size_t n);
+// calcul a^n%mod
+static size_t power(size_t a, size_t n, size_t mod)
+{
+  size_t power = a;
+  size_t result = 1;
+
+  while (n)
+    {
+      if (n & 1)
+	result = (result * power) % mod;
+      power = (power * power) % mod;
+      n >>= 1;
+    }
+  return result;
+}
+
+// n−1 = 2^s * d with d odd by factoring powers of 2 from n−1
+static bool witness(size_t n, size_t s, size_t d, size_t a)
+{
+  size_t x = power(a, d, n);
+  size_t y=0;
+
+  while (s) {
+    y = (x * x) % n;
+    if (y == 1 && x != 1 && x != n-1)
+      return false;
+    x = y;
+    --s;
+  }
+  if (y != 1)
+    return false;
+  return true;
+}
+
+/*
+ * if n < 1,373,653, it is enough to test a = 2 and 3;
+ * if n < 9,080,191, it is enough to test a = 31 and 73;
+ * if n < 4,759,123,141, it is enough to test a = 2, 7, and 61;
+ * if n < 1,122,004,669,633, it is enough to test a = 2, 13, 23, and 1662803;
+ * if n < 2,152,302,898,747, it is enough to test a = 2, 3, 5, 7, and 11;
+ * if n < 3,474,749,660,383, it is enough to test a = 2, 3, 5, 7, 11, and 13;
+ * if n < 341,550,071,728,321, it is enough to test a = 2, 3, 5, 7, 11, 13, and 17.
+ */
+
+static bool is_prime_mr(size_t n) {
+  if (((!(n & 1)) && n != 2 ) || (n < 2) || (n % 3 == 0 && n != 3))
+    return false;
+  if (n <= 3)
+    return true;
+
+  size_t d = n / 2;
+  size_t s = 1;
+  while (!(d & 1)) {
+    d /= 2;
+    ++s;
+  }
+
+  if (n < 1373653)
+    return witness(n, s, d, 2) && witness(n, s, d, 3);
+  if (n < 9080191)
+    return witness(n, s, d, 31) && witness(n, s, d, 73);
+  if (n < 4759123141)
+    return witness(n, s, d, 2) && witness(n, s, d, 7) && witness(n, s, d, 61);
+  if (n < 1122004669633)
+    return witness(n, s, d, 2) && witness(n, s, d, 13) && witness(n, s, d, 23) && witness(n, s, d, 1662803);
+  if (n < 2152302898747)
+    return witness(n, s, d, 2) && witness(n, s, d, 3) && witness(n, s, d, 5) && witness(n, s, d, 7) && witness(n, s, d, 11);
+  if (n < 3474749660383)
+    return witness(n, s, d, 2) && witness(n, s, d, 3) && witness(n, s, d, 5) && witness(n, s, d, 7) && witness(n, s, d, 11) && witness(n, s, d, 13);
+  return witness(n, s, d, 2) && witness(n, s, d, 3) && witness(n, s, d, 5) &&
+    witness(n, s, d, 7) && witness(n, s, d, 11) && witness(n, s, d, 13) && witness(n, s, d, 17);
+}
+
+
